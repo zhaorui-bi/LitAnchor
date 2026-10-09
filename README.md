@@ -1,280 +1,299 @@
-# 📑 LitAnchor — 零按量付费的文献数据提参技能（ZCode 版）
+# LitAnchor
 
 > **Structured, page-traceable data extraction from PDF papers** — text anchoring, selective visual reading, and three-level hard validation, at zero metered API cost.
 
 [![CI](https://github.com/zhaorui-bi/LitAnchor/actions/workflows/ci.yml/badge.svg)](https://github.com/zhaorui-bi/LitAnchor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![Python ≥3.9](https://img.shields.io/badge/python-%E2%89%A53.9-blue.svg)](https://www.python.org/)
+[![Python >=3.9](https://img.shields.io/badge/python-%3E%3D3.9-blue.svg)](https://www.python.org/)
 [![ZCode Skill](https://img.shields.io/badge/ZCode-Skill-7C3AED.svg)](./SKILL.md)
 
-[LitExtract](https://github.com/Water-Quality-Risk-Control-Engineering/paper-param-extractor) 的 **ZCode 原生版 —— LitAnchor**（项目名 LitAnchor，技能名保持 `lit-extract`）：把原 OpenClaw + DashScope 流水线搬进 ZCode 会话，Stage 0 / Stage 3 用本地脚本，视觉精读走 Z.ai 内置视觉工具，提参在会话内完成——**按量 API 费用 ¥0**，面向 ZCode 订阅用户。沿用同一套 **文本锚定 + 视觉精读 + 三级硬校验** 混合架构，输出带页码级溯源的结构化 JSON。
+LitAnchor is a ZCode skill (skill name: `lit-extract`) for structured, page-traceable data extraction from PDF research papers. It is built for ZCode subscribers: Stage 0 anchoring and Stage 3 validation run as local Python scripts, Stage 1 visual reading uses the session's built-in vision tool, and Stage 2 extraction happens in-session — so a full extraction run incurs zero metered API cost and needs no API keys.
 
-> 从原 OpenClaw+DashScope 版迁移过来？直接看 [docs/MIGRATION.md](./docs/MIGRATION.md)。
+**Why LitAnchor.** Pure-vision pipelines hallucinate on long documents: in the worked example below, the vision layer misread a figure value by orders of magnitude (kcat/KM transcribed as "4293 s-1 mM-1" where the paper's text layer says 0.263 mM-1 s-1) — and every such misread was caught and corrected. LitAnchor defends against this with a text-anchoring architecture: ground-truth metadata (title/DOI/authors/keywords) and the full text are hard-extracted from the PDF text layer by a local script, figures and tables are selectively vision-read, and a three-level hard validator makes every output value traceable to its page, table, or figure.
 
-## 目录
+## Table of Contents
 
-- [Quick Start（三步）](#-quick-start)
-- [核心能力](#-核心能力)
-- [成本与架构对比](#-成本与架构对比)
-- [输出格式](#-输出格式)
-- [使用教程](#-使用教程)
-- [真实验证](#-真实验证)
-- [常见问题](#-常见问题)
-- [项目结构](#-项目结构)
-- [文档索引](#-文档索引)
-- [参与贡献（Contributing）](#-参与贡献contributing)
-- [引用（Citation）](#-引用citation)
-- [许可证（License）](#-许可证license)
-- [致谢](#-致谢)
-- [发布前 Checklist](#-发布前-checklist)
+- [Quick Start](#-quick-start)
+- [How It Works](#-how-it-works)
+- [Cost](#-cost)
+- [Output Format](#-output-format)
+- [Tutorials](#-tutorials)
+- [Worked Example: VenusMine (Nature Communications 2025)](#-worked-example-venusmine-nature-communications-2025)
+- [FAQ](#-faq)
+- [Project Structure](#-project-structure)
+- [Documentation Index](#-documentation-index)
+- [Contributing](#-contributing)
+- [Citation](#-citation)
+- [License](#-license)
 
 ## 🚀 Quick Start
 
-### 第 1 步 · 安装
+### Step 1 · Install
 
-前置要求：
+Prerequisites:
 
-- **ZCode 订阅会话**（需 Read 工具；建议配备内置视觉精读工具 `analyze_image`，缺失时自动降级为纯文本模式，见[使用教程 · 降级模式](#-使用教程)）
-- **Python ≥3.9** + PyMuPDF（`pip install pymupdf`；校验脚本纯标准库、零依赖）
-- 无需 Node.js、无需 OpenClaw、无需 DashScope API Key
+- A **ZCode subscription session** (Read tool required; the built-in vision tool `analyze_image` is recommended — the skill degrades gracefully without it, see [Degraded mode](#-tutorials))
+- **Python >=3.9** with PyMuPDF (`pip install pymupdf`; the validation script is pure stdlib, zero dependencies)
+- No Node.js, no API keys of any kind
 
 ```bash
-# 在本包根目录执行：复制 SKILL.md + 两个脚本到 ~/.zcode/skills/lit-extract/
-# （旧版自动备份为 lit-extract.bak.<日期>；无交互、无网络请求、无凭据）
+# From the package root: copies SKILL.md + scripts/stage0_anchor.py + scripts/validate.py
+# into ~/.zcode/skills/lit-extract/ (a previous install is auto-backed-up;
+# no interaction, no network requests, no credentials)
 bash install.sh
 
-# 卸载
+# Uninstall
 bash install.sh --uninstall
 ```
 
-手动安装：把 `SKILL.md`、`scripts/stage0_anchor.py`、`scripts/validate.py` 三个文件按相同目录结构复制到 `~/.zcode/skills/lit-extract/` 即可。
+Manual install: copy `SKILL.md`, `scripts/stage0_anchor.py`, and `scripts/validate.py` into `~/.zcode/skills/lit-extract/`, preserving the directory structure.
 
-### 第 2 步 · 自测
+### Step 2 · Self-test
 
 ```bash
 python3 tests/selftest.py
 ```
 
-零 API、无凭据；生成合成 6 页 PDF 验证分页/锚点/PNG 渲染，构造记录验证三级校验的删除与标记逻辑，退出码 0 = 全部通过（编写本文档时实测 17/17 PASS；CI 同样以 `py_compile` + selftest 把关，见 `.github/workflows/ci.yml`）。另有可选的真实论文回归项：设置环境变量 `LIT_EXTRACT_SELFTEST_PDF=/path/to/andersson_main.pdf`、或把该 PDF 复制为包内 `tests/andersson_main.pdf`（`.gitignore` 已忽略）即自动加测，缺失则跳过、不算失败。
+Zero API, zero credentials: it generates a synthetic 6-page PDF and verifies anchoring, page classification, PNG rendering, and the validation logic. At the time of writing, **14/14 checks PASS** (exit code 0 = pass). One optional real-paper regression is skipped — not failed — when its PDF is absent; enable it via the environment variable `LIT_EXTRACT_SELFTEST_PDF=/path/to.pdf` or by placing that PDF at the path named in `tests/selftest.py`. CI (GitHub Actions, `.github/workflows/ci.yml`) runs `py_compile` plus the self-test on Python 3.11.
 
-### 第 3 步 · 首次使用
+### Step 3 · First use
 
-安装并自测通过后，在 ZCode 会话里直接说需求即可触发技能（命中"提参 / 提取参数 / 文献数据提取"等关键词或提供 PDF 路径）：
-
-```
-帮我从 ~/papers/Andersson2026.pdf 中提取所有 PFAS 吸附去除数据：
-- removal_rate_percent: 去除率(%)
-- adsorption_capacity_mg_g: 吸附容量(mg/g)
-```
-
-技能将依次执行 Stage 0（锚定+分页）→ Stage 1（data_page 视觉精读）→ Stage 2（会话内合并提参）→ Stage 3（三级硬校验），交付 `<PDF>_result_validated.json`。完整场景（多文献对比、ADRMATS 测试集、缓存复用等）见[使用教程](#-使用教程)。
-
-## 🎯 核心能力
-
-| 能力 | 说明 | 与原版对应 |
-|------|------|-----------|
-| **PDF 文本锚定** | 本地脚本 `stage0_anchor.py` 提取文本层，标题/DOI/作者/关键词作为不可幻觉锚点，全程绑定 | 同原版（原为 `preprocess.py` 的 Stage 0 段） |
-| **选择性视觉精读** | 仅对含图表页（data_page）精读：Read 读 PNG → 内置 `analyze_image`；跳过参考文献、晶体学数据页 | 原版 qwen3.6-plus VL → 本版 Z.ai 内置视觉工具 |
-| **约束驱动提参** | 用户定义键值结构 + 筛选条件，由当前会话模型按约束精确提取 | 原版 DashScope 文本模式调用 → 本版会话内完成 |
-| **三级硬校验** | Level 1 元数据一致性 → Level 2 实体存在性 → Level 3 数值回溯，本地脚本秒级执行，杜绝幻觉数据 | 同原版（本版 `validate.py` 纯标准库、零依赖） |
-| **溯源标记** | 每个值标注 `Page N, Table X` 级来源；五级质量标记 reliable / needs_review / suspicious / inferred / unavailable | 原版三级质量标记 → 本版五级（新增 inferred / unavailable） |
-| **多文献对比** | 逐篇独立执行完整校验流水线，合并为带 `paper_id` 的统一 JSON | 同原版 |
-| **ADRMATS 测试集 Profile** | 一键构建评估智能体测试集：`visible_input` + `hidden_oracle_label` + `source_trace` 三段式记录（SKILL.md §11） | 对应原版 skill 的 ADRMATS profile |
-
-## 💰 成本与架构对比
-
-| 对比项 | 原版 OpenClaw + DashScope | ZCode 版 |
-|--------|--------------------------|----------|
-| 视觉精读（Stage 1） | DashScope qwen3.6-plus VL，按量计费 | Z.ai 内置视觉工具（订阅内） |
-| 约束提参（Stage 2） | DashScope qwen3.6-plus，按量计费 | 当前会话模型，会话内完成 |
-| 文本锚定 / 硬校验（Stage 0/3） | 本地脚本 | 本地脚本（不变） |
-| **单篇按量费用** | **约 ¥0.50-0.80**（84 页含 SI 论文实测口径） | **¥0**（内置工具计费口径以 Z.ai 账单为准） |
-| API Key / 网关配置 | `DASHSCOPE_API_KEY` + `openclaw.json` + OpenClaw Gateway | 无需配置 |
-| 入口 | WebUI / TUI / CLI（`http://127.0.0.1:18789`） | ZCode 会话对话，直接说需求 |
-
-### 流水线架构（四阶段）
+In a ZCode session, just ask to extract data from a PDF (or invoke the skill directly). You supply the field keys, value types, and constraints:
 
 ```
-PDF 文件
-  │
-  ├─ [Stage 0] 文本锚定与智能分页 —— 本地脚本 stage0_anchor.py（秒级，零 API）
-  │    ├─ 元数据锚点：标题 / DOI / 作者 / 关键词（不可覆盖）
-  │    ├─ 智能分页：data_page / text_page / skip_page
-  │    └─ data_page 渲染 PNG → <PDF>_pages/page_00N.png
-  │
-  ├─ [Stage 1] 选择性视觉精读（仅 data_page）—— ZCode 会话通道
-  │    ├─ Read 工具读取 PNG → 获得图片 URL
-  │    └─ 内置 analyze_image 视觉精读 → 每页 Markdown 转录（并发 ≤3）
-  │
-  ├─ [Stage 2] 合并 + 约束提参 —— 当前会话模型（零外部 API）
-  │    ├─ 文本页用 stage0 文本、数据页用视觉转录，按页码合并
-  │    └─ 注入元数据锚点 + 用户约束 → 结构化 JSON
-  │
-  └─ [Stage 3] 三级硬校验 —— 本地脚本 validate.py（秒级，零 API）
-       ├─ Level 1 元数据一致性 / Level 2 实体存在性 / Level 3 数值回溯
-       └─ 输出 <result>_validated.json（溯源 + 质量标记 + 校验报告）
+Extract PET hydrolase characterization data from ~/papers/VenusMine.pdf:
+- enzyme_name: PET hydrolase name
+- source_organism: origin organism or metagenome
+- optimal_temperature_C: optimal catalytic temperature (deg C)
+- Tm_C: melting temperature by DSF (deg C)
+- activity_vs_IsPETase_fold: PET-film degradation activity vs IsPETase (fold)
+- Km_mM_pNPB / kcat_s_minus1_pNPB / kcat_Km_pNPB: Michaelis-Menten kinetics on pNPB
+Constraint: one record per enzyme characterized in the paper.
 ```
 
-## 📊 输出格式
+The skill runs Stage 0 (anchoring + page classification) → Stage 1 (visual reading of data pages only) → Stage 2 (in-session merge + constraint-driven extraction) → Stage 3 (three-level hard validation) and delivers `<PDF>_result_validated.json`. The full scenario catalog (multi-paper comparison, ADRMATS test sets, cache reuse, and more) is in [Tutorials](#-tutorials).
 
-提取结果为标准 JSON：`extraction_meta`（锚点绑定元数据）+ `field_definitions`（用户字段）+ `data[]`（每条记录含 `_source` 页码级溯源与 `_quality` 五级质量标记）+ `validation_report`（三级校验报告）+ `extraction_notes`。完整 schema 与字段级溯源规则见 [`SKILL.md`](./SKILL.md) §5；ADRMATS Profile 的三段式 schema 见 §11.6。
-
-## 📖 使用教程
-
-### 场景 1：单篇论文提参
+## 🧭 How It Works
 
 ```
-帮我从 ~/papers/Andersson2026.pdf 中提取所有 PFAS 吸附去除数据：
-
-提取字段：
-- material_type: 吸附剂类型
-- target_pollutant: 目标PFAS
-- removal_rate_percent: 去除率(%)
-- adsorption_capacity_mg_g: 吸附容量(mg/g)
-- binding_thermodynamics: 结合热力学参数
-
-约束：每种 PFAS 一条记录，包含水质信息。
+PDF file
+  |
+  +-- [Stage 0] Text anchoring + smart page classification -- local script stage0_anchor.py (seconds, zero API)
+  |     |-- Metadata anchors: title / DOI / authors / keywords (non-hallucinable, hard-extracted
+  |     |   from the PDF text layer, bound to every later stage)
+  |     |-- Smart page classification: data_page / text_page / skip_page
+  |     |   (references, crystallography, NMR peak lists are skipped)
+  |     |-- Full text saved to the stage0 JSON (the validation baseline)
+  |     +-- Data pages rendered to PNG at 150 DPI -> <PDF>_pages/page_00N.png
+  |
+  +-- [Stage 1] Selective visual reading (data pages only) -- ZCode session channel
+  |     |-- Read tool loads the page PNG (page list MUST come from the stage0 JSON data_page_nums)
+  |     +-- Built-in analyze_image with an anti-hallucination transcription prompt
+  |         (concurrency cap 3 with rate-limit backoff)
+  |
+  +-- [Stage 2] Merge + constraint-driven extraction -- in-session, zero external API
+  |     |-- Text pages from the stage0 text, data pages from the visual transcription,
+  |     |   merged in page order with metadata anchors injected
+  |     +-- Session model + your field keys/types + constraints -> structured JSON
+  |
+  +-- [Stage 3] Three-level hard validation -- local script validate.py (pure stdlib, seconds)
+        |-- Level 1: metadata consistency (title/DOI/authors vs anchors)
+        |-- Level 2: entity existence (records whose entity names never appear
+        |   in the paper are deleted)
+        |-- Level 3: numeric traceback (values must be findable in the text layer, ±1%)
+        +-- Output <PDF>_result_validated.json (provenance + quality tiers + validation report)
 ```
 
-技能会依次执行 Stage 0（锚定+分页）→ Stage 1（data_page 视觉精读）→ Stage 2（会话内合并提参）→ Stage 3（三级硬校验），最终交付 `<PDF>_result_validated.json`——每个值带 `_source` 页码溯源与 `_quality` 质量标记。
+| Capability | What it does |
+|------------|--------------|
+| **PDF text anchoring** | Local script `stage0_anchor.py` extracts the text layer; title/DOI/authors/keywords become non-hallucinable anchors bound through the whole run |
+| **Selective visual reading** | Only figure/table pages (data_page) are visually read — Read the PNG, then the built-in `analyze_image` with an anti-hallucination transcription prompt; reference, crystallography, and NMR pages are skipped |
+| **Constraint-driven extraction** | You define the field keys, value types, and constraints; the session model extracts against them after merging the text and visual layers in page order |
+| **Three-level hard validation** | Local script `validate.py` (pure stdlib, seconds): Level 1 metadata consistency → Level 2 entity existence → Level 3 numeric traceback within ±1% |
+| **Provenance + five quality tiers** | Every extracted value carries `_source` provenance (page number, table/Figure id) and a `_quality` tier: `reliable` / `needs_review` / `suspicious` / `inferred` / `unavailable` |
+| **Multi-paper comparison** | Each paper runs the full pipeline independently; results merge into one JSON with `paper_id` |
+| **ADRMATS test-set profile** | Build evaluation-agent test sets as `visible_input` + `hidden_oracle_label` + `source_trace` records ([SKILL.md](./SKILL.md) §11) |
 
-### 场景 2：多文献对比提参
+## 💰 Cost
+
+Everything runs inside the ZCode subscription or as local scripts. Stage 0 anchoring and Stage 3 validation are local Python scripts (seconds, no network); Stage 1 uses the session's built-in vision tool; Stage 2 is done by the session model itself. There is no metered API of any kind and no API keys to configure.
+
+## 📊 Output Format
+
+The deliverable is a single JSON envelope: `extraction_meta` (anchor-bound metadata) + `field_definitions` (your fields) + `data[]` (each record with `_source` page-level provenance and `_quality` tier per value) + `validation_report` + `extraction_notes`. The full schema and field-level provenance rules are in [SKILL.md](./SKILL.md) §5; the ADRMATS three-part schema is in §11.6.
+
+A trimmed record from the worked example (see [below](#-worked-example-venusmine-nature-communications-2025)):
+
+```json
+{
+  "enzyme_name": "KbPETase (APET-14)",
+  "source_organism": "Kibdelosporangium banguiense",
+  "optimal_temperature_C": 50,
+  "Tm_C": 80.1,
+  "Km_mM_pNPB": 1.04,
+  "kcat_s_minus1_pNPB": 0.27,
+  "kcat_Km_pNPB": 0.263,
+  "_source": {
+    "Tm_C": "Page 3, upper bound of the DSF Tm range 36.4-80.1 °C (Fig. 2b) plus the stated '+32.4 °C over IsPETase'",
+    "Km_mM_pNPB": "Page 6, Table 1, row KbPETase"
+  },
+  "_quality": { "Tm_C": "reliable", "Km_mM_pNPB": "reliable" }
+}
+```
+
+## 📖 Tutorials
+
+### 1. Single-paper extraction
+
+Give the PDF path plus your field definitions; optional constraints and output granularity refine what comes back.
 
 ```
-从这三篇论文中提取 MOF 材料性能对比数据：
-1. ~/papers/Li2025.pdf
-2. ~/papers/Wang2024.pdf
-3. ~/papers/Zhang2026.pdf
-
-提取字段：
-- material_name: 材料名称
-- BET_surface_area: 比表面积(m²/g)
-- CO2_uptake: CO₂吸附量(mmol/g)
+Extract PET hydrolase characterization data from ~/papers/VenusMine.pdf:
+- enzyme_name: PET hydrolase name
+- source_organism: origin organism or metagenome
+- optimal_temperature_C: optimal catalytic temperature (deg C)
+- Tm_C: melting temperature by DSF (deg C)
+- activity_vs_IsPETase_fold: PET-film degradation activity vs IsPETase (fold)
+- Km_mM_pNPB / kcat_s_minus1_pNPB / kcat_Km_pNPB: Michaelis-Menten kinetics on pNPB
+Constraint: one record per enzyme characterized in the paper.
 ```
 
-每篇独立执行完整 Stage 0–3 校验流水线，最后合并为带 `paper_id` 的统一 JSON。多篇可并行处理，但所有会话/子代理合计的视觉精读在途并发仍受 ≤3 约束。
+For this prompt the skill ran the full pipeline on the 12-page PDF: 7 data pages were visually read, 4 text pages were taken from the text layer, 1 page was skipped, and the validated result contains 4 enzyme records (KbPETase, IsPETase, LCC, FastPETase) — each value carrying page-level `_source` provenance and a `_quality` tier. Full numbers in the [Worked Example](#-worked-example-venusmine-nature-communications-2025).
 
-### 场景 3：构建 ADRMATS 评估智能体测试集
+### 2. Multi-paper comparison
 
 ```
-我要为 ADRMATS 评估智能体构建测试集，请从 ~/papers/ 的 PDF 中按 high/low/noise
-三级提取，输出 visible_input + hidden_oracle_label。噪声样本占 10%，低质量占 20%，
-高质量占 70%。
+Compare Michaelis-Menten kinetics across these PDFs and merge into one JSON:
+1. ~/papers/VenusMine.pdf
+2. ~/papers/enzyme_screen_2025.pdf
+3. ~/papers/kinetics_review_2024.pdf
+
+Fields:
+- enzyme_name: enzyme name
+- Km_mM: Michaelis constant (mM)
+- kcat_s_minus1: turnover number (1/s)
+- temperature_C: assay temperature (deg C)
 ```
 
-激活 ADRMATS Profile（SKILL.md §11）：按"材料 × 污染物 × 水质 × 实验类型"最小粒度拆分记录，输出 `visible_input`（constraint_context + merged_proposals）+ `hidden_oracle_label`（quality_tier / noise_type 等，不随可见输入下发）+ `source_trace` 三段式；三级硬校验照常执行。
+Each paper runs the complete Stage 0-3 pipeline independently, and the per-paper validated results are merged into one JSON with a `paper_id` index. Papers may be processed in parallel sessions, but all sessions combined must keep the total in-flight visual reads at 3 or fewer (the shared vision-tool quota is account-level).
 
-### 缓存复用
+### 3. ADRMATS evaluation-agent test-set profile
 
-`<PDF>_stage0.json` + `<PDF>_pages/` PNG 目录是缓存单元：两者齐备且 PNG 数与 `data_page_nums` 一致时**不会重跑** Stage 0。同一会话对同一 PDF 换一批字段重新提参，只重跑 Stage 2–3。注意：用 `--dpi 300` 重渲染时必须同时 `-o` 指定新的 stage0 JSON 输出路径，否则默认路径会覆盖原缓存。
+```
+Build a test set for the ADRMATS evaluation agent from the PDFs in ~/papers/.
+Split the records by quality tier: 70% high, 20% low, 10% noise.
+Output visible_input (constraint_context + merged_proposals) per record, plus a
+separate hidden_oracle_label (quality_tier etc.) and a source_trace for every value.
+```
 
-### 主文 + SI 合并（推荐）
+This activates the ADRMATS profile ([SKILL.md](./SKILL.md) §11): records are split at fine granularity per material, pollutant, and condition, using the three-part schema `visible_input` (`constraint_context` + `merged_proposals`) + `hidden_oracle_label` (quality tier `high`/`low`/`noise` and related fields, never shipped with the visible input) + `source_trace`. Text anchoring and three-level hard validation run unchanged.
 
-同一论文的补充材料建议先用 PyMuPDF 合并成单一 PDF 再提参（核心 3 行）：
+### 4. Cache reuse
+
+`<PDF>_stage0.json` plus the `<PDF>_pages/` PNG directory form the Stage 0 cache unit: when both exist and the PNG count matches the stage0 JSON's `data_page_nums`, Stage 0 is **not re-run**. Re-extracting the same PDF with a different set of fields in the same session reuses the cache and only re-runs Stage 2-3. Note: re-rendering at higher resolution (`--dpi 300`) requires `-o` pointing to a new stage0 JSON path — otherwise the default output path is overwritten and the original cache is lost.
+
+### 5. Merging main text + SI (recommended)
+
+For a paper whose supporting information (SI) carries data, merge main text and SI into a single PDF before extraction (core 3 lines):
 
 ```python
 import pymupdf
 out = pymupdf.open()
-for p in ("main.pdf", "SI.pdf"):    # 主文在前，保证页码顺序
+for p in ("main.pdf", "SI.pdf"):    # main text first, keeps page numbering continuous
     out.insert_pdf(pymupdf.open(p))
 out.save("merged.pdf")
 ```
 
-合并后页码连续，SI 中的数值可正常回溯校验。实测对照（Andersson 2026）：仅跑 10 页主文时，85 项只在 74 页 SI 中才有的数据全部只能置 `null`。
+With continuous page numbering, `_source` page provenance and the Level 3 numeric-traceback baseline stay in one coordinate system, so values that appear only in the SI can be extracted and validated normally.
 
-### 降级模式（无视觉工具时）
+### 6. Degraded mode
 
-会话中 `analyze_image` 不可用时自动退回纯文本层模式：文本层可查的数值正常提取（校验后 `reliable`）；仅存在于图表中的数值置 `null`（校验后 `unavailable`），`_source` 保留页码并写明未读取原因，`extraction_notes` 声明精度风险。纯扫描 PDF（无文本层）且视觉工具同时不可用时，流水线终止并明确告知，不产出无基准的结果。
+When the session has no vision tool, the pipeline falls back to text-layer-only: values present in the text layer extract normally (validated as `reliable`), while values that exist only inside figures become `null`/`unavailable` with honest notes — `_source` keeps the page and states why the value was not read, and `extraction_notes` declares the precision risk. A scanned PDF with no text layer **and** no vision tool aborts with an explicit message rather than emitting unanchored results.
 
-## ✅ 真实验证
+## ✅ Worked Example: VenusMine (Nature Communications 2025)
 
-**Andersson 2026**（*Angew. Chem. Int. Ed.* 2026, DOI 10.1002/anie.202526027，10 页主文）端到端实测，并与原 OpenClaw+DashScope 版期望结果逐项对照（详见 [`docs/verification-andersson-2026.md`](./docs/verification-andersson-2026.md)；两版结果文件随包发布在 [`examples/`](./examples/)，可独立复算）：
+**Paper**: Wu, B., Zhong, B., Zheng, L., Huang, R., Jiang, S., Li, M., Hong, L. & Tan, P. "Harnessing protein language model for structure-based discovery of highly efficient and robust PET hydrolases." *Nature Communications* (2025) 16:6211, DOI [10.1038/s41467-025-61599-z](https://doi.org/10.1038/s41467-025-61599-z).
 
-| 验证项 | 结果 |
-|--------|------|
-| 主文可核对条目 | **39/39 项与原工具期望结果一致**（BET/孔容/七种 PFAS 计量比/ITC ΔH/log K/容量/去除率/CCDC 号等） |
-| 三级校验 | **0 条幻觉删除**；Level 3 计数 **34 reliable / 7 unavailable**，与逐记录复核完全吻合 |
-| 期望文件自身问题 | 对照中发现期望结果文件 **2 处 log K 记录与原文矛盾**（PFHxS/PFHpA）——本版按主文原句处理更忠实 |
-| 视觉精读 | **6/7 页成功**（第 7 页因视觉工具账户限流由文本层兜底，失败页留痕声明） |
-| SI 字段 | SI 未获取，故 **85 项仅 SI 字段未核对**，全部如实置 `null` 并注明原因，无臆测填补 |
+The paper proposes VenusMine, a structure-based enzyme-discovery pipeline combining FoldSeek (structure retrieval), MMseqs2 (sequence retrieval), ProstT5 protein-language-model embeddings, and a representation tree, used to mine PET-hydrolase enzymes. Of 34 candidates taken to wet-lab validation, 26 were expressed and purified, and 14 showed PET degradation activity across 30-60 °C — 11 of the 14 comparable to IsPETase — with a DSF melting-temperature range of 36.4-80.1 °C. The star result is KbPETase (candidate APET-14, from *Kibdelosporangium banguiense*, GenBank WP_209642273.1): 97x IsPETase activity (at 50 °C vs IsPETase's 30 °C), Tm +32.4 °C over IsPETase (about 80.1 °C), 5.7x LCC at 50 °C and 1.47x LCC at LCC's 65 °C optimum, 1.5x kcat and 1.3x kcat/KM vs LCC, and an X-ray structure at 1.75 Å (PDB 9IW9). Kinetics on pNPB (Table 1): KbPETase Km 1.04 mM / kcat 0.270 s-1 / kcat/KM 0.263 mM-1 s-1; FastPETase 1.57 / 0.215 / 0.141; LCC 1.053 / 0.186 / 0.208.
 
-## ❓ 常见问题
+**LitAnchor run on this PDF:**
+
+| Item | Result |
+|------|--------|
+| Pages classified | 12 pages → 7 data pages / 4 text pages / 1 skip |
+| Data pages visually read | 7/7 (concurrency <= 3, no rate-limit failures) |
+| Records produced (Stage 2) | 4 enzyme records: KbPETase, IsPETase, LCC, FastPETase |
+| Level 3 outcome (Stage 3) | 15 reliable values, 17 honestly-nulled unavailable values, 0 suspicious |
+| Records deleted by validation | 0 |
+
+**Two corrections this run demonstrates:**
+
+1. **Vision misreads corrected against the text layer.** The visual transcription misread figure values — kcat/KM was read as "4293 s-1 mM-1" and the candidate count as "top 54 sequences", where the text layer says 0.263 mM-1 s-1 and "top 34". Every quoted number was corrected against the text layer during merge.
+2. **Anchor quirk disclosed, original text prevails.** The title-anchor heuristic captured an abstract line on this two-column layout; the protocol's original-text-prevails rule restored the verbatim title, and the episode is disclosed in the result's `anchor_note`.
+
+The full validated result ships in the repo: [`examples/venusmine_result_validated.json`](./examples/venusmine_result_validated.json), with a guide in [`examples/README.md`](./examples/README.md).
+
+## ❓ FAQ
 
 <details>
-<summary><b>怎么计费？真的免费吗？</b></summary>
+<summary><b>How is it billed? Is it really zero metered cost?</b></summary>
 
-全程使用 ZCode 订阅：Stage 0/3 是本地脚本，Stage 2 由会话模型完成，Stage 1 走 Z.ai 内置视觉工具——**无任何按量付费 API、无需 DashScope Key，按量费用 ¥0**。内置工具（analyze_image）的具体计费口径以 Z.ai 账单为准。
+Everything runs inside the ZCode subscription or as local scripts: Stage 0 and Stage 3 are local Python scripts, Stage 2 is done by the session model, and Stage 1 goes through the session's built-in vision tool. There is no metered API of any kind and no API keys.
 </details>
 
 <details>
-<summary><b>如果 PDF 是扫描版怎么办？</b></summary>
+<summary><b>What if the PDF is a scanned copy?</b></summary>
 
-文本层几乎为空（全文 <200 字符）时，改走全页视觉精读，Stage 3 自动跳过 Level 2/3 并在结果中声明需人工复核。若同时没有视觉工具，流水线会终止并告知——不产出无校验基准的结果。建议优先使用带文本层的原生 PDF。
+When the text layer is near-empty, the pipeline switches to full-page visual reading, and Stage 3 skips the Level 2/3 checks and flags the result as needing manual review. If no vision tool is available either, the pipeline aborts with an explicit message rather than producing results with no anchoring baseline. Native PDFs with a text layer are preferred.
 </details>
 
 <details>
-<summary><b>和原 OpenClaw 版是什么关系？会冲突吗？</b></summary>
+<summary><b>Which papers are supported?</b></summary>
 
-同一方法论的 ZCode 原生实现，**两者可共存**：原版部署在 OpenClaw Gateway（`paper-param-extractor` 仓库），本版只安装到 `~/.zcode/skills/lit-extract/`，互不干扰。已在 Andersson 2026 上做过两版对照：主文可核对 39/39 项一致。从原版迁移见 [docs/MIGRATION.md](./docs/MIGRATION.md)。
+Native PDFs with a text layer (as downloaded from the publisher) work best, in Chinese or English alike. Reference lists, crystallography tables, and NMR peak-list pages are auto-skipped by the smart page classifier. Domains beyond chemistry work too — the worked example above is a protein-engineering paper.
 </details>
 
-<details>
-<summary><b>支持哪些论文？</b></summary>
-
-中英文均可。带文本层的原生 PDF（出版商直接下载版）效果最佳；参考文献、晶体学参数、NMR 峰列表等页面会被智能分页自动跳过；跨页表格由 Stage 2 自动关联拼接。
-</details>
-
-## 📁 项目结构
+## 📁 Project Structure
 
 ```
 LitAnchor/
-├── SKILL.md                              # ★ 正式版协议（安装后位于 ~/.zcode/skills/lit-extract/）
-├── install.sh                            # 一键安装 / 更新 / 卸载
-├── README.md                             # 本文件
+├── SKILL.md                              # The protocol document (installed to ~/.zcode/skills/lit-extract/)
+├── install.sh                            # One-command install / update / uninstall
+├── README.md                             # This file
 ├── LICENSE                               # MIT
-├── CONTRIBUTING.md                       # 贡献指南
-├── CHANGELOG.md                          # 变更日志（Keep a Changelog 风格）
-├── CITATION.cff                          # 研究软件引用元数据（CFF 1.2.0）
+├── CONTRIBUTING.md                       # Contribution guidelines
+├── CHANGELOG.md                          # Changelog
+├── CITATION.cff                          # Citation metadata (CFF 1.2.0)
 ├── scripts/
-│   ├── stage0_anchor.py                  # Stage 0：文本锚定 + 智能分页 + PNG 渲染
-│   └── validate.py                       # Stage 3：三级硬校验（纯标准库，秒级）
+│   ├── stage0_anchor.py                  # Stage 0: text anchoring + page classification + PNG rendering
+│   └── validate.py                       # Stage 3: three-level hard validation (pure stdlib, seconds)
 ├── tests/
-│   ├── selftest.py                       # 一键自测（零 API、零凭据）
-│   ├── make_synthetic_pdf.py             # 自测用合成 PDF 生成器
-│   └── _artifacts/                       # 自测产物（.gitignore 已忽略）
+│   ├── selftest.py                       # One-command self-test (zero API, zero credentials)
+│   ├── make_synthetic_pdf.py             # Synthetic PDF generator for the self-test
+│   └── _artifacts/                       # Self-test artifacts (gitignored)
 ├── examples/
-│   ├── README.md                         # 案例文件说明（Andersson 2026）
-│   ├── andersson_result_validated.json   # ZCode 版端到端结果（三级校验后）
-│   └── andersson_expected.json           # 原 OpenClaw+DashScope 版期望结果
-├── docs/
-│   ├── MIGRATION.md                      # 从 OpenClaw+DashScope 版迁移指南
-│   └── verification-andersson-2026.md    # 与原 OpenClaw+DashScope 版的对照评审
+│   ├── README.md                         # Guide to the example files
+│   └── venusmine_result_validated.json   # Worked example: end-to-end validated result
+├── docs/                                 # Archived notes
 └── .github/
-    └── workflows/ci.yml                  # CI：py_compile + selftest（Python 3.11）
+    └── workflows/ci.yml                  # CI: py_compile + selftest (Python 3.11)
 ```
 
-## 📚 文档索引
+## 📚 Documentation Index
 
-| 文档 | 内容 |
-|------|------|
-| [`docs/MIGRATION.md`](./docs/MIGRATION.md) | 从原 OpenClaw+DashScope 版迁移到 ZCode 版的指南 |
-| [`docs/verification-andersson-2026.md`](./docs/verification-andersson-2026.md) | Andersson 2026 两版逐项对照评审报告（39/39 主文可核对一致、85 项仅 SI 未核对、期望文件自身 2 处错误） |
-| [`examples/README.md`](./examples/README.md) | 案例文件说明：两份结果 JSON 可独立复算对照结论 |
+| Document | Contents |
+|----------|----------|
+| [`SKILL.md`](./SKILL.md) | Pipeline protocol (§2-§3), output schema (§5), ADRMATS test-set profile (§11) |
+| [`examples/README.md`](./examples/README.md) | Worked-example files |
 
-协议主文档为 [`SKILL.md`](./SKILL.md)（流水线协议 §2–§3、输出 schema §5、ADRMATS Profile §11），随技能一并安装。
+## 🤝 Contributing
 
-## 🤝 参与贡献（Contributing）
+Issues and PRs are welcome. Please read [`CONTRIBUTING.md`](./CONTRIBUTING.md) first. Before opening a PR, run `python3 tests/selftest.py` from the repository root and make sure the exit code is 0; paste the full output in the PR description.
 
-欢迎 Issue 与 PR。开始前请阅读 [`CONTRIBUTING.md`](./CONTRIBUTING.md)：提交前在仓库根目录运行 `python3 tests/selftest.py` 并确保退出码 0（PR 正文请贴完整输出）；脚本行为变更必须同步更新 `SKILL.md` 对应章节，二者不一致视为缺陷。
+## 📝 Citation
 
-## 📝 引用（Citation）
+If LitAnchor helps your work, please cite it using [`CITATION.cff`](./CITATION.cff) (CFF 1.2.0, validatable with `cffconvert`).
 
-如本项目对你的工作有帮助，请按 [`CITATION.cff`](./CITATION.cff)（CFF 1.2.0，可用 `cffconvert` 校验）引用；如已注册 DOI，可在其中补充 `identifiers`（type: doi）条目。
+## 📄 License
 
-## 📄 许可证（License）
-
-[MIT License](./LICENSE) — Copyright (c) 2026 Water Quality Risk Control Engineering & contributors。
-
-## 🙏 致谢
-
-基于 [Water-Quality-Risk-Control-Engineering/paper-param-extractor](https://github.com/Water-Quality-Risk-Control-Engineering/paper-param-extractor)（维护者 [Axl1Huang](https://github.com/Axl1Huang)）构建。
+[MIT License](./LICENSE) — Copyright (c) 2026 Water Quality Risk Control Engineering & contributors.

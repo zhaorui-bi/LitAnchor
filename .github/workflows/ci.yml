@@ -1,0 +1,24 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pymupdf
+
+      - name: Byte-compile scripts
+        run: python3 -m py_compile scripts/stage0_anchor.py scripts/validate.py
+
+      - name: Run selftest
+        run: python3 tests/selftest.py

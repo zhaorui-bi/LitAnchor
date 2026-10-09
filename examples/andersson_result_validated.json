@@ -1,0 +1,472 @@
+{
+  "extraction_meta": {
+    "source": "Efficient Removal of Short-Chain Perfluoroalkyl Substances",
+    "doi": "10.1002/anie.202526027",
+    "authors": [
+      "Caroline V. I. Andersson",
+      "Sumali G. T. Mudiyanselage",
+      "Martin D. Peeks",
+      "Asja A. Kroeger",
+      "Jemma I. Virtue",
+      "Maximilian Mann",
+      "Justin M. Chalker",
+      "Michelle L. Coote"
+    ],
+    "anchor_keywords": "perfluoroalkyl substances | coordination cage | host-guest chemistry | aggregation | host-in-host adsorbent",
+    "document": "10-page main text (Angewandte Chemie International Edition 2026, 65, e26027); Supporting Information NOT available to this pipeline",
+    "anchor_note": "source/doi/authors 使用 andersson_stage0.json 锚点原值，未修改（锚点作者列表为 8 人，不含通讯作者 M. R. Johnston 与 W. M. Bloch，照锚点原样保留）",
+    "extraction_stage": "Stage 2 约束提参",
+    "extraction_date": "2026-09-29",
+    "record_granularity": "每种 PFAS 客体一条记录（共 7 种：PFBA, PFBS, PFPeA, PFHxA, PFHpA, PFHxS, PFOA），吸附剂均为 1·MS（MOC 1 掺杂介孔硅 60A 复合物），材料级字段在各记录中重复出现",
+    "records_removed_by_validation": 0
+  },
+  "pipeline_notes": {
+    "merge_rule": "按页码顺序合并：text_page（p1, p9, p10）用 stage0 pages_text，标注 [Page N - text]；data_page（p2–p8）用视觉转录 page_001.md–page_007.md，标注 [Page N - visual]；stage0 pages_text 实际包含全部 10 页文本层，作为数据主源（文本锚定）",
+    "visual_transcription_coverage": "视觉转录仅覆盖 p1–p7；p7（Figure 6 关键页）转录失败（page_007.md 为失败声明：analyze_image 账户级 429 速率限制，重试 6 次未恢复），p7 数据全部取自 stage0 文本层；p8（Conclusion/致谢/参考文献起始页）无视觉转录，其文本层无 Figure/Table 数据",
+    "conflict_resolution": "视觉转录存在多处与 PDF 原生文本层冲突的转写错误，一律以 stage0 文本层为准，冲突明细记录于各记录 _quality.conflict_notes 及本节",
+    "known_visual_transcription_errors": [
+      "page_004.md: 'log K of 5.2' → 文本层 p4: 'The 1:2 model fit for PFOA yielded a lower log K of 4.2'（取 4.2）",
+      "page_004.md: 'except PFHxA' → 文本层 p4: 'yielding single crystals in all cases except PFHpA'（取 PFHpA）",
+      "page_004.md: 'PFBS crystallised as a 1:3 host-guest complex' → 文本层 p4: 'PFHxS crystallised as a 1:3 host–guest complex'（取 PFHxS 1:3；PFBS 为 1:4）",
+      "page_004.md: 'binding constant for PFOS is >10⁵ M⁻¹' → 文本层 p4: 'binding constant for PFOA is >10⁸ M⁻²'（取 PFOA >10⁸ M⁻²）",
+      "page_004.md: 'perfluorohexanesulfinic acid' → 文本层 p3: 'perfluorohexanesulfonic acid (PFHxS)'（取 sulfonic）",
+      "page_005.md Figure 3 caption: 'e) 1·(PFHxS)₄' → 文本层 p4 正文与 Figure 3 caption、CCDC 2497658 均为 1·(PFHxS)₃（取 1:3）",
+      "page_003.md: 'sharp peaks at a host:guest ratio of 1:4' → 文本层 p3: 'sharp plateaus at a host-guest ratio of 1:4'（语义一致）",
+      "page_004.md: 'decreases slightly from ~4.6 to 3.9' → 文本层 p4: 'from ∼4.6 to 3.8'（取 3.8）"
+    ],
+    "figure_readout_policy": "文本层正文未给出、仅存在于图中的数值（Figure 3 各结构 F···F 距离标注、Figure 4d TΔS/ΔG 柱值）取自视觉转录的图中读数，一律在 _quality 标 needs_review=true"
+  },
+  "field_definitions": {
+    "pollutant_name": "目标 PFAS 缩写与英文全名（按主文 Figure 1b 及正文）",
+    "chain_class_per_paper": "主文对该 PFAS 的链长分类（主文 p3 将 PFHpA 归入 short-chain guests，照原文记录）",
+    "material_type": "吸附剂/主体材料类型描述（MOC 1 笼与介孔硅复合物 1·MS；结合热力学在游离 MOC 1 水溶液中测得）",
+    "chemical_formula": "吸附剂化学分子式（主文未给出 MOC 1 分子式，仅描述组成 → null）",
+    "cage_loading_wt_percent": "MOC 1 在 MS 60A 中的负载量（wt%，ICP-MS）",
+    "specific_surface_area_m2_g": "N₂ 77 K BET 比表面积（m² g⁻¹），主值为复合物 1·MS，对比值记于 note",
+    "total_pore_volume_cm3_g": "总孔体积（cm³ g⁻¹，N₂ 77 K），主值为 1·MS，对比值记于 note",
+    "pore_diameter_A": "孔径（Å）；主文仅给出 MS 60A 基体标称孔径 60 Å，1·MS 自身孔径未单独报告",
+    "target_pollutant": "目标污染物对象：名称/分子式/分子量（分子式与分子量主文未报告 → null）",
+    "host_guest_stoichiometry": "MOC 1 : PFAS 主客体计量比（X 射线晶体学为准，辅以 NMR 滴定/Job plot）",
+    "adsorption_performance.removal_rate_percent": "去除率（%，流穿柱实验，LC-MS/MS 测定）",
+    "adsorption_performance.adsorption_capacity_mg_g": "吸附容量（mg g⁻¹，破过实验估计）",
+    "adsorption_performance.kinetics": "吸附动力学",
+    "adsorption_performance.regeneration": "吸附剂再生性能",
+    "binding_thermodynamics.log_K": "结合常数（log K；NMR/MCMC 拟合下限与 ITC 独立位点模型归一化值，原文区分标注）",
+    "binding_thermodynamics.delta_H_kJ_mol": "焓变 ΔH（kJ mol⁻¹，ITC）",
+    "binding_thermodynamics.delta_S": "熵变（主文仅定性 entropy-driven；TΔS 柱值为 Figure 4d 图估读）",
+    "active_sites": "活性位点",
+    "adsorption_mechanism": "吸附/结合机理",
+    "water_quality_tested": "测试水质条件",
+    "_source": "数据溯源：页码 + Figure/Table 编号（text=stage0 文本层，visual=视觉转录）",
+    "_quality": "数据质量标记：confidence 等级、needs_review（图估读）、conflict_notes（视觉转写与文本层冲突的处理说明）"
+  },
+  "data": [
+    {
+      "pollutant_name": "PFBA (perfluorobutanoic acid)",
+      "chain_class_per_paper": "short-chain PFAS, carboxylic acid（主文首个研究对象，C4）",
+      "material_type": "metal-organic cage / mesoporous silica host-in-host composite (1·MS)：Fujita 型八面体 Pd(II) 笼 MOC 1（六个 (tmeda)PdII 节点 + 四个 2,4,6-三(4-吡啶基)-1,3,5-三嗪配体，12+ 电荷由 NO₃⁻ 抗衡）分散于 60 Å 介孔硅 MS 60A；结合热力学在游离 MOC 1 的 D₂O 溶液中测得；笼直径 ~28 Å；制备：16 mL 2.5 mM MOC 1 水溶液 + 5 g MS 60A 搅拌 16 h",
+      "chemical_formula": null,
+      "cage_loading_wt_percent": "0.99 ± 0.01 (ICP-MS)",
+      "specific_surface_area_m2_g": 403,
+      "total_pore_volume_cm3_g": 0.79,
+      "pore_diameter_A": 60,
+      "target_pollutant": {
+        "name": "PFBA (perfluorobutanoic acid)",
+        "molecular_formula": null,
+        "molecular_weight_g_mol": null
+      },
+      "host_guest_stoichiometry": "1:4（SCXRD: 1·(PFBA)₄，CCDC 2497659；¹H NMR 滴定 4 当量处化学位移出现清晰平台；Job plot 广泛支持 1:4）",
+      "adsorption_performance": {
+        "removal_rate_percent": "∼98（1000 ng/L 单一 PFAS Milli-Q 水溶液，1 g 1·MS 流穿柱，40 mL/h，LC-MS/MS 分析洗脱液全部低于检测限；摘要表述 >98%）；环境相关浓度 ∼150 ng/L 下出口 9.5 ± 0.7 ng/L",
+        "adsorption_capacity_mg_g": "∼2 mg/g（破过实验：0.47 mM PFBA 通过 100 mg 1·MS 柱；破过点出现于 1:4 理论主客体化学计量起点，与腔定向结合为唯一摄取机制一致）",
+        "kinetics": ">95% PFAS 在 1 min 内去除（MOC 1 与 1·MS 相对流率均为快速摄取；主文引 Figures S53, S62, S63，SI 未获取）",
+        "regeneration": "0.10 mM PFBA/PFOA 混合液过柱后以 KNO₃(饱和)/MeOH 洗脱：⁹F ERETIC NMR 证实 5 个循环完全再生、去除能力无下降；PFBA 可被 KNO₃/H₂O 选择性洗脱（较高水溶性所致）；MeOH 单独洗脱失败（证明 PFAS 与 MOC 1 NO₃⁻ 抗衡离子间的离子交换结合）"
+      },
+      "binding_thermodynamics": {
+        "log_K": "NMR/MCMC（1:4 模型）log K 下限 ∼4.6（短链 PFBA→PFHpA 随链长自 ∼4.6 递减至 3.8 序列的短链端）；ITC 独立位点模型归一化 log K = 5.7",
+        "delta_H_kJ_mol": -7.4,
+        "delta_S": "正文定性：熵驱动（entropically driven，与 MOC 腔内结构水释放一致）；TΔS ≈ 25 kJ/mol（Figure 4d 图估读，needs_review）"
+      },
+      "active_sites": "MOC 1 带正电的笼腔（PdII 节点，12+ 电荷）分散于硅 60 Å 介孔孔道内；PFAS 以阴离子形式结合并置换原生 NO₃⁻ 抗衡离子；ITC 表明 4 个 PFBA 协同结合为单一结合事件",
+      "adsorption_mechanism": "阴离子交换 + 腔定向聚集：PFBA 以阴离子形式进入笼腔置换 NO₃⁻，四条全氟烷基链在腔内采取 tail-to-tail 伪螺旋排列（最小化氟碳链对水暴露，氟烷链在限域内与水相分离）；阴离子头基与 PdII 中心静电锚定；短链 PFAS 主要经 Hβ 与头基邻近 CF₂ 相互作用（HOESY）；X 射线结构中客间 F···F 平均距离 2.92 Å（< 2.94 Å vdW 极限，Figure 3a 视觉转录读数，needs_review）；⁹F NMR：0.2 当量时 CF₃ 端基上移 −2.8 ppm、中央 CF₂ 上移 −1.4 ppm、近头基 CF₂ 仅 −0.2 ppm（后者靠近腔口）",
+      "water_quality_tested": "Milli-Q 水（1000 ng/L 单一 PFAS 流穿）；南澳自来水典型盐浓度的 model tap water（性能保持；组成见 Table S15，未获取）；环境相关浓度 ∼150 ng/L；摘要称对常见水相阴离子具高选择性",
+      "_source": {
+        "材料与表征": "p.6 [text/visual] 正文（制备、负载量、~28 Å 笼径、60 Å 孔）；p.6–7 [text] 正文 + Figure 5c（N₂ 77K 等温线、BET 403 m²/g vs MS 60A 430 m²/g、孔体积 0.79 vs 0.82 cm³/g、MOC 1 非多孔）",
+        "removal/capacity/kinetics/regeneration": "p.7 [text] 正文（Figure 6a 去除率、Figure 6b 破过、Figure 6c–d 再生；p7 视觉转录失败，数据取文本层）",
+        "log_K/ΔH/ΔS": "p.4 [text] 正文（log K 下限、Figure 4a）；p.5 [text] 正文 + Figure 4c,d（ITC log K 5.7、ΔH = −7.4 kJ/mol；TΔS 柱值图估读 p.6 [visual] Figure 4d）",
+        "stoichiometry/结构": "p.2–3 [text] 正文（Figure 2a–b, 2f NMR 滴定/HOESY）；p.4 [text] 正文 + Figure 3a（X 射线 1·(PFBA)₄，F···F 距离为 p.5 [visual] Figure 3a 读数）；p.10 [text] CCDC 2497659"
+      },
+      "_quality": {
+        "confidence": "high（除标注图估读项外均为文本层正文原句数值）",
+        "needs_review": true,
+        "needs_review_items": [
+          "TΔS ≈ 25 kJ/mol（Figure 4d 柱状图估读，视觉转录）",
+          "F···F = 2.92 Å（Figure 3a 图旁标注读数，视觉转录；与正文『低于 2.94 Å vdW 极限且随链长递减』一致）"
+        ],
+        "null_fields": [
+          "chemical_formula（主文未给出 MOC 1 分子式，仅有组成描述）",
+          "target_pollutant.molecular_formula / molecular_weight_g_mol：主文未报告（SI 未获取）"
+        ],
+        "conflict_notes": "视觉转录 page_004.md 称 PFBA 之外短链可获取 log K 个体值与 'log K 5.2'，与文本层冲突，已按文本层取 4.2/区间表述",
+        "chemical_formula": "unavailable",
+        "cage_loading_wt_percent": "reliable",
+        "specific_surface_area_m2_g": "reliable",
+        "total_pore_volume_cm3_g": "reliable",
+        "pore_diameter_A": "reliable",
+        "host_guest_stoichiometry": "reliable"
+      }
+    },
+    {
+      "pollutant_name": "PFBS (perfluorobutanesulfonic acid)",
+      "chain_class_per_paper": "short-chain PFAS, sulfonic acid（C4 磺酸）",
+      "material_type": "metal-organic cage / mesoporous silica host-in-host composite (1·MS)：Fujita 型八面体 Pd(II) 笼 MOC 1（六个 (tmeda)PdII 节点 + 四个 2,4,6-三(4-吡啶基)-1,3,5-三嗪配体，12+ 电荷由 NO₃⁻ 抗衡）分散于 60 Å 介孔硅 MS 60A；结合热力学在游离 MOC 1 的 D₂O 溶液中测得；笼直径 ~28 Å；制备：16 mL 2.5 mM MOC 1 水溶液 + 5 g MS 60A 搅拌 16 h",
+      "chemical_formula": null,
+      "cage_loading_wt_percent": "0.99 ± 0.01 (ICP-MS)",
+      "specific_surface_area_m2_g": 403,
+      "total_pore_volume_cm3_g": 0.79,
+      "pore_diameter_A": 60,
+      "target_pollutant": {
+        "name": "PFBS (perfluorobutanesulfonic acid)",
+        "molecular_formula": null,
+        "molecular_weight_g_mol": null
+      },
+      "host_guest_stoichiometry": "1:4（SCXRD: 1·(PFBS)₄，CCDC 2497657；¹H NMR 滴定 1:4 处平台；Job plot 广泛支持 1:4）",
+      "adsorption_performance": {
+        "removal_rate_percent": "∼98（1000 ng/L 单一 PFAS Milli-Q 水溶液，1 g 1·MS 流穿柱，40 mL/h，LC-MS/MS 全部低于检测限；摘要 >98%）",
+        "adsorption_capacity_mg_g": null,
+        "kinetics": ">95% PFAS 在 1 min 内去除（Figures S53, S62, S63，SI 未获取）",
+        "regeneration": "KNO₃(饱和)/MeOH 洗脱 5 循环完全再生、去除能力无下降（材料级，⁹F ERETIC NMR）；NaCl/MeOH 亦可；MeOH 单独失败"
+      },
+      "binding_thermodynamics": {
+        "log_K": "NMR/MCMC log K 下限位于 ∼4.6–3.8 区间（主文仅给出 PFBA→PFHpA 五种短链随链长自 ∼4.6 递减至 3.8 的总趋势，PFBS 个体值未单独报告）",
+        "delta_H_kJ_mol": null,
+        "delta_S": null
+      },
+      "active_sites": "MOC 1 带正电的笼腔（PdII 节点，12+）；PFAS 阴离子置换 NO₃⁻；磺酸头基 S–O 键长 1.43–1.44 Å、最近 S–O···Pd 距离 3.73 Å（1·(PFBS)₄ 结构，支持阴离子交换结合）",
+      "adsorption_mechanism": "阴离子交换 + 腔定向聚集：阴离子形式结合置换 NO₃⁻，四条氟烷链 tail-to-tail 伪螺旋排列限域聚集；头基与 PdII 中心静电作用（X 射线证据）；短链经 Hβ 与头基邻近 CF₂ 相互作用；EDA/NCI（DFT, SMD(water)-ωB97MV/Def2-SVP//B97-D/def2-SVP）：静电与色散为主要稳定项、Pauli 排阻部分抵消，头基与主体吡啶 π 体系间弱 vdW、PFBS 尾间弱 vdW；F···F 平均距离 2.87 Å（Figure 3c 读数，needs_review）",
+      "water_quality_tested": "Milli-Q 水（1000 ng/L 单一 PFAS 流穿）；model tap water（南澳典型盐浓度，Table S15 未获取）",
+      "_source": {
+        "材料与表征": "p.6 [text/visual] 正文；p.6–7 [text] 正文 + Figure 5c（BET/孔体积）",
+        "removal/kinetics/regeneration": "p.7 [text] 正文（Figure 6a, 6c–d；p7 视觉转录失败，取文本层）",
+        "log_K": "p.4 [text] 正文（Figure 4a 区间表述）",
+        "stoichiometry/结构/机理": "p.3 [text] 正文（NMR 滴定）；p.4 [text] 正文 + Figure 3c, g, h（X 射线 1·(PFBS)₄、S–O/S–O···Pd 键长、EDA/NCI；F···F 距离为 p.5 [visual] Figure 3c 读数）；p.10 [text] CCDC 2497657"
+      },
+      "_quality": {
+        "confidence": "medium（log_K 仅为区间归属，个体值主文未单独报告）",
+        "needs_review": true,
+        "needs_review_items": [
+          "F···F = 2.87 Å（Figure 3c 图旁标注读数，视觉转录）"
+        ],
+        "null_fields": [
+          "adsorption_capacity_mg_g：主文未报告（SI 未获取）",
+          "delta_H_kJ_mol / delta_S：ITC 仅对 PFBA 与 PFOA 进行，主文未报告（SI 未获取）",
+          "chemical_formula、target_pollutant.molecular_formula / molecular_weight_g_mol：主文未报告（SI 未获取）"
+        ],
+        "conflict_notes": "视觉转录 page_004.md 将 1:3 计量比与无序构象误记于 PFBS，文本层 p4 明确为 PFHxS 1:3、PFBS 为 1:4，已按文本层",
+        "chemical_formula": "unavailable",
+        "cage_loading_wt_percent": "reliable",
+        "specific_surface_area_m2_g": "reliable",
+        "total_pore_volume_cm3_g": "reliable",
+        "pore_diameter_A": "reliable",
+        "host_guest_stoichiometry": "reliable"
+      }
+    },
+    {
+      "pollutant_name": "PFPeA (perfluoropentanoic acid)",
+      "chain_class_per_paper": "short-chain PFAS, carboxylic acid（C5）",
+      "material_type": "metal-organic cage / mesoporous silica host-in-host composite (1·MS)：Fujita 型八面体 Pd(II) 笼 MOC 1（六个 (tmeda)PdII 节点 + 四个 2,4,6-三(4-吡啶基)-1,3,5-三嗪配体，12+ 电荷由 NO₃⁻ 抗衡）分散于 60 Å 介孔硅 MS 60A；结合热力学在游离 MOC 1 的 D₂O 溶液中测得；笼直径 ~28 Å；制备：16 mL 2.5 mM MOC 1 水溶液 + 5 g MS 60A 搅拌 16 h",
+      "chemical_formula": null,
+      "cage_loading_wt_percent": "0.99 ± 0.01 (ICP-MS)",
+      "specific_surface_area_m2_g": 403,
+      "total_pore_volume_cm3_g": 0.79,
+      "pore_diameter_A": 60,
+      "target_pollutant": {
+        "name": "PFPeA (perfluoropentanoic acid)",
+        "molecular_formula": null,
+        "molecular_weight_g_mol": null
+      },
+      "host_guest_stoichiometry": "1:4（SCXRD: 1·(PFPeA)₄，CCDC 2497661；¹H NMR 滴定 1:4 处平台；Job plot 广泛支持 1:4）",
+      "adsorption_performance": {
+        "removal_rate_percent": "∼98（1000 ng/L 单一 PFAS Milli-Q 水溶液，1 g 1·MS 流穿柱，40 mL/h，LC-MS/MS 全部低于检测限；摘要 >98%）",
+        "adsorption_capacity_mg_g": null,
+        "kinetics": ">95% PFAS 在 1 min 内去除（Figures S53, S62, S63，SI 未获取）",
+        "regeneration": "KNO₃(饱和)/MeOH 洗脱 5 循环完全再生、去除能力无下降（材料级，⁹F ERETIC NMR）；NaCl/MeOH 亦可；MeOH 单独失败"
+      },
+      "binding_thermodynamics": {
+        "log_K": "NMR/MCMC log K 下限位于 ∼4.6–3.8 区间（个体值未单独报告，见 PFBA→PFHpA 递减趋势）",
+        "delta_H_kJ_mol": null,
+        "delta_S": null
+      },
+      "active_sites": "MOC 1 带正电的笼腔（PdII 节点，12+）；PFAS 阴离子置换 NO₃⁻",
+      "adsorption_mechanism": "阴离子交换 + 腔定向聚集：阴离子结合置换 NO₃⁻，氟烷链 tail-to-tail 伪螺旋排列限域聚集，头基与 PdII 静电锚定；短链经 Hβ 与头基邻近 CF₂ 相互作用；⁹F NMR：0.1 当量时多数 CF₃/CF₂ 初始上移、续加无明显变化（低浓度主导性主客体物种的形成与存续，多客体协同结合）；F···F 平均距离 2.89 Å（Figure 3b 读数，needs_review）",
+      "water_quality_tested": "Milli-Q 水（1000 ng/L 单一 PFAS 流穿）；model tap water（南澳典型盐浓度，Table S15 未获取）",
+      "_source": {
+        "材料与表征": "p.6 [text/visual] 正文；p.6–7 [text] 正文 + Figure 5c",
+        "removal/kinetics/regeneration": "p.7 [text] 正文（Figure 6a, 6c–d；p7 视觉转录失败，取文本层）",
+        "log_K": "p.4 [text] 正文（Figure 4a 区间表述）",
+        "stoichiometry/结构": "p.3 [text] 正文（NMR 滴定、19F NMR）；p.4 [text] 正文 + Figure 3b（X 射线 1·(PFPeA)₄；F···F 距离为 p.5 [visual] Figure 3b 读数）；p.10 [text] CCDC 2497661"
+      },
+      "_quality": {
+        "confidence": "medium（log_K 仅为区间归属）",
+        "needs_review": true,
+        "needs_review_items": [
+          "F···F = 2.89 Å（Figure 3b 图旁标注读数，视觉转录）"
+        ],
+        "null_fields": [
+          "adsorption_capacity_mg_g：主文未报告（SI 未获取）",
+          "delta_H_kJ_mol / delta_S：ITC 仅对 PFBA 与 PFOA 进行，主文未报告（SI 未获取）",
+          "chemical_formula、target_pollutant.molecular_formula / molecular_weight_g_mol：主文未报告（SI 未获取）"
+        ],
+        "conflict_notes": "",
+        "chemical_formula": "unavailable",
+        "cage_loading_wt_percent": "reliable",
+        "specific_surface_area_m2_g": "reliable",
+        "total_pore_volume_cm3_g": "reliable",
+        "pore_diameter_A": "reliable",
+        "host_guest_stoichiometry": "reliable"
+      }
+    },
+    {
+      "pollutant_name": "PFHxA (perfluorohexanoic acid)",
+      "chain_class_per_paper": "short-chain PFAS, carboxylic acid（C6）",
+      "material_type": "metal-organic cage / mesoporous silica host-in-host composite (1·MS)：Fujita 型八面体 Pd(II) 笼 MOC 1（六个 (tmeda)PdII 节点 + 四个 2,4,6-三(4-吡啶基)-1,3,5-三嗪配体，12+ 电荷由 NO₃⁻ 抗衡）分散于 60 Å 介孔硅 MS 60A；结合热力学在游离 MOC 1 的 D₂O 溶液中测得；笼直径 ~28 Å；制备：16 mL 2.5 mM MOC 1 水溶液 + 5 g MS 60A 搅拌 16 h",
+      "chemical_formula": null,
+      "cage_loading_wt_percent": "0.99 ± 0.01 (ICP-MS)",
+      "specific_surface_area_m2_g": 403,
+      "total_pore_volume_cm3_g": 0.79,
+      "pore_diameter_A": 60,
+      "target_pollutant": {
+        "name": "PFHxA (perfluorohexanoic acid)",
+        "molecular_formula": null,
+        "molecular_weight_g_mol": null
+      },
+      "host_guest_stoichiometry": "1:4（SCXRD: 1·(PFHxA)₄，CCDC 2497656；¹H NMR 滴定 1:4 处平台；Job plot 广泛支持 1:4）",
+      "adsorption_performance": {
+        "removal_rate_percent": "∼98（1000 ng/L 单一 PFAS Milli-Q 水溶液，1 g 1·MS 流穿柱，40 mL/h，LC-MS/MS 全部低于检测限；摘要 >98%）",
+        "adsorption_capacity_mg_g": null,
+        "kinetics": ">95% PFAS 在 1 min 内去除（Figures S53, S62, S63，SI 未获取）",
+        "regeneration": "KNO₃(饱和)/MeOH 洗脱 5 循环完全再生、去除能力无下降（材料级，⁹F ERETIC NMR）；NaCl/MeOH 亦可；MeOH 单独失败"
+      },
+      "binding_thermodynamics": {
+        "log_K": "NMR/MCMC log K 下限位于 ∼4.6–3.8 区间（个体值未单独报告，见 PFBA→PFHpA 递减趋势）",
+        "delta_H_kJ_mol": null,
+        "delta_S": null
+      },
+      "active_sites": "MOC 1 带正电的笼腔（PdII 节点，12+）；PFAS 阴离子置换 NO₃⁻",
+      "adsorption_mechanism": "阴离子交换 + 腔定向聚集：阴离子结合置换 NO₃⁻，氟烷链 tail-to-tail 伪螺旋排列限域聚集，头基与 PdII 静电锚定；短链经 Hβ 与头基邻近 CF₂ 相互作用；⁹F NMR：0.1 当量时多数 CF₃/CF₂ 初始上移、续加无明显变化（多客体协同结合）；F···F 平均距离 2.87 Å（Figure 3d 读数，needs_review）",
+      "water_quality_tested": "Milli-Q 水（1000 ng/L 单一 PFAS 流穿）；model tap water（南澳典型盐浓度，Table S15 未获取）",
+      "_source": {
+        "材料与表征": "p.6 [text/visual] 正文；p.6–7 [text] 正文 + Figure 5c",
+        "removal/kinetics/regeneration": "p.7 [text] 正文（Figure 6a, 6c–d；p7 视觉转录失败，取文本层）",
+        "log_K": "p.4 [text] 正文（Figure 4a 区间表述）",
+        "stoichiometry/结构": "p.3 [text] 正文（NMR 滴定、19F NMR）；p.4 [text] 正文 + Figure 3d（X 射线 1·(PFHxA)₄；F···F 距离为 p.5 [visual] Figure 3d 读数）；p.10 [text] CCDC 2497656"
+      },
+      "_quality": {
+        "confidence": "medium（log_K 仅为区间归属）",
+        "needs_review": true,
+        "needs_review_items": [
+          "F···F = 2.87 Å（Figure 3d 图旁标注读数，视觉转录）"
+        ],
+        "null_fields": [
+          "adsorption_capacity_mg_g：主文未报告（SI 未获取）",
+          "delta_H_kJ_mol / delta_S：ITC 仅对 PFBA 与 PFOA 进行，主文未报告（SI 未获取）",
+          "chemical_formula、target_pollutant.molecular_formula / molecular_weight_g_mol：主文未报告（SI 未获取）"
+        ],
+        "conflict_notes": "视觉转录 page_004.md 称单晶析出失败的是 PFHxA，文本层 p4 明确为 'except PFHpA'（PFHxA 有单晶，CCDC 2497656），已按文本层",
+        "chemical_formula": "unavailable",
+        "cage_loading_wt_percent": "reliable",
+        "specific_surface_area_m2_g": "reliable",
+        "total_pore_volume_cm3_g": "reliable",
+        "pore_diameter_A": "reliable",
+        "host_guest_stoichiometry": "reliable"
+      }
+    },
+    {
+      "pollutant_name": "PFHpA (perfluoroheptanoic acid)",
+      "chain_class_per_paper": "short-chain guest（主文 p3 将其列入 four additional short-chain guests；C7 羧酸）",
+      "material_type": "metal-organic cage / mesoporous silica host-in-host composite (1·MS)：Fujita 型八面体 Pd(II) 笼 MOC 1（六个 (tmeda)PdII 节点 + 四个 2,4,6-三(4-吡啶基)-1,3,5-三嗪配体，12+ 电荷由 NO₃⁻ 抗衡）分散于 60 Å 介孔硅 MS 60A；结合热力学在游离 MOC 1 的 D₂O 溶液中测得；笼直径 ~28 Å；制备：16 mL 2.5 mM MOC 1 水溶液 + 5 g MS 60A 搅拌 16 h",
+      "chemical_formula": null,
+      "cage_loading_wt_percent": "0.99 ± 0.01 (ICP-MS)",
+      "specific_surface_area_m2_g": 403,
+      "total_pore_volume_cm3_g": 0.79,
+      "pore_diameter_A": 60,
+      "target_pollutant": {
+        "name": "PFHpA (perfluoroheptanoic acid)",
+        "molecular_formula": null,
+        "molecular_weight_g_mol": null
+      },
+      "host_guest_stoichiometry": "未获 X 射线结构（主文：单晶析出失败 'all cases except PFHpA'）；NMR 支持 1:2/1:3 两平衡模型（两参数模型）；¹⁹F NMR 滴定在 2–4 当量间化学位移显著变化（n-己基全氟链长促进随浓度改变的计量比漂移）；Figure 4b 将其与 PFHxS 同归 H·G₃ + H·G₂ 组（视觉转录，needs_review）",
+      "adsorption_performance": {
+        "removal_rate_percent": "∼98（1000 ng/L 单一 PFAS Milli-Q 水溶液，1 g 1·MS 流穿柱，40 mL/h，LC-MS/MS 全部低于检测限；摘要 >98%）",
+        "adsorption_capacity_mg_g": null,
+        "kinetics": ">95% PFAS 在 1 min 内去除（Figures S53, S62, S63，SI 未获取）",
+        "regeneration": "KNO₃(饱和)/MeOH 洗脱 5 循环完全再生、去除能力无下降（材料级，⁹F ERETIC NMR）；NaCl/MeOH 亦可；MeOH 单独失败"
+      },
+      "binding_thermodynamics": {
+        "log_K": "NMR/MCMC log K 下限 3.8（PFBA→PFHpA 随链长自 ∼4.6 递减至 3.8 序列的长链端；两参数 1:2/1:3 模型）",
+        "delta_H_kJ_mol": null,
+        "delta_S": null
+      },
+      "active_sites": "MOC 1 带正电的笼腔（PdII 节点，12+）；PFAS 阴离子置换 NO₃⁻",
+      "adsorption_mechanism": "阴离子交换 + 腔定向聚集（主客体系机理，同其他 PFAS）：阴离子结合置换 NO₃⁻、氟烷链腔内聚集、头基与 PdII 静电锚定；其 n-己基全氟链长使主客体计量比随客体浓度增大发生漂移（¹⁹F NMR 2–4 当量显著位移）",
+      "water_quality_tested": "Milli-Q 水（1000 ng/L 单一 PFAS 流穿）；model tap water（南澳典型盐浓度，Table S15 未获取）",
+      "_source": {
+        "材料与表征": "p.6 [text/visual] 正文；p.6–7 [text] 正文 + Figure 5c",
+        "removal/kinetics/regeneration": "p.7 [text] 正文（Figure 6a, 6c–d；p7 视觉转录失败，取文本层）",
+        "log_K": "p.4 [text] 正文（Figure 4a；两参数模型表述）",
+        "stoichiometry": "p.3 [text] 正文（Figure 2d 滴定 2–4 当量位移）；p.4 [text] 正文（单晶析出失败；两参数 1:2/1:3 模型）；p.6 [visual] Figure 4b 分组（needs_review）"
+      },
+      "_quality": {
+        "confidence": "medium（无 X 射线结构，计量比为模型推断）",
+        "needs_review": true,
+        "needs_review_items": [
+          "Figure 4b 中 PFHpA 归入 H·G₃ + H·G₂ 组（视觉转录 page_006.md）"
+        ],
+        "null_fields": [
+          "adsorption_capacity_mg_g：主文未报告（SI 未获取）",
+          "delta_H_kJ_mol / delta_S：ITC 仅对 PFBA 与 PFOA 进行，主文未报告（SI 未获取）",
+          "chemical_formula、target_pollutant.molecular_formula / molecular_weight_g_mol：主文未报告（SI 未获取）"
+        ],
+        "conflict_notes": "视觉转录 page_004.md 称 PFHpA 有 1:4 X 射线结构且 19F 位移区间为 '2–3 equivalents'，与文本层（except PFHpA 无单晶；PFHpA 为 2–4 当量）冲突，已按文本层",
+        "chemical_formula": "unavailable",
+        "cage_loading_wt_percent": "reliable",
+        "specific_surface_area_m2_g": "reliable",
+        "total_pore_volume_cm3_g": "reliable",
+        "pore_diameter_A": "reliable"
+      }
+    },
+    {
+      "pollutant_name": "PFHxS (perfluorohexanesulfonic acid; 滴定实验使用其 K⁺ 盐 PFHxS(K⁺))",
+      "chain_class_per_paper": "long-chain PFAS, sulfonic acid（C6 磺酸）",
+      "material_type": "metal-organic cage / mesoporous silica host-in-host composite (1·MS)：Fujita 型八面体 Pd(II) 笼 MOC 1（六个 (tmeda)PdII 节点 + 四个 2,4,6-三(4-吡啶基)-1,3,5-三嗪配体，12+ 电荷由 NO₃⁻ 抗衡）分散于 60 Å 介孔硅 MS 60A；结合热力学在游离 MOC 1 的 D₂O 溶液中测得；笼直径 ~28 Å；制备：16 mL 2.5 mM MOC 1 水溶液 + 5 g MS 60A 搅拌 16 h",
+      "chemical_formula": null,
+      "cage_loading_wt_percent": "0.99 ± 0.01 (ICP-MS)",
+      "specific_surface_area_m2_g": 403,
+      "total_pore_volume_cm3_g": 0.79,
+      "pore_diameter_A": 60,
+      "target_pollutant": {
+        "name": "PFHxS (perfluorohexanesulfonic acid)",
+        "molecular_formula": null,
+        "molecular_weight_g_mol": null
+      },
+      "host_guest_stoichiometry": "1:3（SCXRD: 1·(PFHxS)₃，CCDC 2497658，MOC 1 的非典型计量比；三个客体之一在腔内双位置无序，另两个仅部分包封、部分氟烷尾暴露于溶剂；¹H NMR 滴定 3 当量处 Hα/Hβ 平台、继续添加产生沉淀）；低浓度下可能以 1:2 计量比为主导（X 射线验证未成功，主文推测）",
+      "adsorption_performance": {
+        "removal_rate_percent": "∼98（1000 ng/L 单一 PFAS Milli-Q 水溶液，1 g 1·MS 流穿柱，40 mL/h，LC-MS/MS 全部低于检测限；摘要 >98%）；环境相关浓度 ∼150 ng/L 下出口 <1 ng/L",
+        "adsorption_capacity_mg_g": null,
+        "kinetics": ">95% PFAS 在 1 min 内去除（Figures S53, S62, S63，SI 未获取）",
+        "regeneration": "KNO₃(饱和)/MeOH 洗脱 5 循环完全再生、去除能力无下降（材料级，⁹F ERETIC NMR）；选择性洗脱：KNO₃/丙酮只移除 PFHxS（较疏水长链需更低极性溶剂/KNO₃ 混合物破坏 MOC 腔内疏水聚集）；三种 PFAS 可经单次 KNO₃/MeOH 洗涤同时去除"
+      },
+      "binding_thermodynamics": {
+        "log_K": "两参数 1:2/1:3 模型支持；主文表述其结合比 PFHpA 强至少两个数量级（个体 log K 数值主文未给出；摘要总体称 log K ≥ 5）",
+        "delta_H_kJ_mol": null,
+        "delta_S": null
+      },
+      "active_sites": "MOC 1 带正电的笼腔（PdII 节点，12+）；PFAS 阴离子置换 NO₃⁻",
+      "adsorption_mechanism": "阴离子交换 + 腔定向聚集：阴离子结合置换 NO₃⁻；长链 PFHxS 的 CF₃ 尾与 Hβ 有更强 HOESY 接触（长链深入笼体并与腔对面 Hβ 作用，X 射线支持）；过量时沉淀；F···F 平均距离 2.79 Å（Figure 3e 读数，needs_review）",
+      "water_quality_tested": "Milli-Q 水（1000 ng/L 单一 PFAS 流穿）；model tap water（南澳典型盐浓度，Table S15 未获取）；环境相关浓度 ∼150 ng/L（出口 <1 ng/L）",
+      "_source": {
+        "材料与表征": "p.6 [text/visual] 正文；p.6–7 [text] 正文 + Figure 5c",
+        "removal/kinetics/regeneration": "p.7 [text] 正文（Figure 6a, 6c–d；150 ng/L 出口浓度；选择性洗脱；p7 视觉转录失败，取文本层）",
+        "log_K": "p.4 [text] 正文（两参数模型 + 'at least two orders of magnitude stronger' 表述）",
+        "stoichiometry/结构": "p.3 [text] 正文（Figure 2c 滴定 3 当量平台、沉淀；HOESY）；p.4 [text] 正文 + Figure 3e（X 射线 1·(PFHxS)₃、无序/部分包装描述；F···F 距离为 p.5 [visual] Figure 3e 读数）；p.10 [text] CCDC 2497658"
+      },
+      "_quality": {
+        "confidence": "medium（log_K 无个体数值，仅有相对强度表述）",
+        "needs_review": true,
+        "needs_review_items": [
+          "F···F = 2.79 Å（Figure 3e 图旁标注读数，视觉转录）"
+        ],
+        "null_fields": [
+          "adsorption_capacity_mg_g：主文未报告（SI 未获取）",
+          "delta_H_kJ_mol / delta_S：ITC 仅对 PFBA 与 PFOA 进行，主文未报告（SI 未获取）",
+          "chemical_formula、target_pollutant.molecular_formula / molecular_weight_g_mol：主文未报告（SI 未获取）"
+        ],
+        "conflict_notes": "视觉转录 page_005.md Figure 3 caption 写 'e) 1·(PFHxS)₄'，与文本层正文及 CCDC 2497658（1·(PFHxS)₃）冲突，已按文本层取 1:3；视觉转录 page_003.md 将 PFHxS 误写为 'perfluorohexanesulfinic acid'，已按文本层 sulfonic acid",
+        "chemical_formula": "unavailable",
+        "cage_loading_wt_percent": "reliable",
+        "specific_surface_area_m2_g": "reliable",
+        "total_pore_volume_cm3_g": "reliable",
+        "pore_diameter_A": "reliable",
+        "host_guest_stoichiometry": "reliable"
+      }
+    },
+    {
+      "pollutant_name": "PFOA (perfluorooctanoic acid)",
+      "chain_class_per_paper": "long-chain PFAS, carboxylic acid（C8；legacy 长链代表物）",
+      "material_type": "metal-organic cage / mesoporous silica host-in-host composite (1·MS)：Fujita 型八面体 Pd(II) 笼 MOC 1（六个 (tmeda)PdII 节点 + 四个 2,4,6-三(4-吡啶基)-1,3,5-三嗪配体，12+ 电荷由 NO₃⁻ 抗衡）分散于 60 Å 介孔硅 MS 60A；结合热力学在游离 MOC 1 的 D₂O 溶液中测得；笼直径 ~28 Å；制备：16 mL 2.5 mM MOC 1 水溶液 + 5 g MS 60A 搅拌 16 h",
+      "chemical_formula": null,
+      "cage_loading_wt_percent": "0.99 ± 0.01 (ICP-MS)",
+      "specific_surface_area_m2_g": 403,
+      "total_pore_volume_cm3_g": 0.79,
+      "pore_diameter_A": 60,
+      "target_pollutant": {
+        "name": "PFOA (perfluorooctanoic acid)",
+        "molecular_formula": null,
+        "molecular_weight_g_mol": null
+      },
+      "host_guest_stoichiometry": "1:2（SCXRD: 1·(PFOA)₂，CCDC 2497660，两 PFOA 客体在腔内垂直排列；¹H NMR：2 当量时游离主体完全消耗、新去屏蔽芳族共振出现，继续添加生成 PFOA+MOC 1 沉淀）",
+      "adsorption_performance": {
+        "removal_rate_percent": "∼98（1000 ng/L 单一 PFAS Milli-Q 水溶液，1 g 1·MS 流穿柱，40 mL/h，LC-MS/MS 全部低于检测限；摘要 >98%）；环境相关浓度 ∼150 ng/L 下出口 <1 ng/L（远低于 EPA 指南）",
+        "adsorption_capacity_mg_g": "∼20 mg/g（破过实验：0.6 mM PFOA 通过 100 mg 1·MS 柱；容量远超 1:2 理论主客体比预期，与过量 PFOA 加入 MOC 1 时形成水不溶沉淀（外表与内部结合的聚集体）一致）",
+        "kinetics": ">95% PFAS 在 1 min 内去除（Figures S53, S62, S63，SI 未获取）",
+        "regeneration": "KNO₃(饱和)/MeOH 洗脱移除 PFOA、5 循环完全再生且去除能力无下降（⁹F ERETIC NMR）；NaCl/MeOH 亦可（更环境友好）；MeOH 单独失败（证明离子交换结合）；PFBA/PFHxS/PFOA 混合物可经单次 KNO₃/MeOH 洗涤全部去除"
+      },
+      "binding_thermodynamics": {
+        "log_K": "慢交换 NMR 估算总结合常数 >10⁸ M⁻²（超出慢交换 NMR 数据置信范围）；1:2 模型 MCMC 拟合 log K 下限 4.2；ITC 独立位点模型归一化 log K = 5.3（两 PFOA 协同结合为单一结合事件）",
+        "delta_H_kJ_mol": 8.0,
+        "delta_S": "正文定性：熵驱动（entropically driven，与 MOC 腔内结构水释放一致；PFOA 结合为吸热，热力学上更依赖熵项）；TΔS ≈ 38 kJ/mol（Figure 4d 图估读，needs_review）"
+      },
+      "active_sites": "MOC 1 带正电的笼腔（PdII 节点，12+）；PFAS 阴离子置换 NO₃⁻；过量 PFOA 另在笼外/孔道形成水不溶聚集体（额外容量来源）",
+      "adsorption_mechanism": "阴离子交换 + 腔定向聚集：阴离子结合置换 NO₃⁻，两 PFOA 垂直排列包封于腔内；CF₃ 尾与 Hβ 强 HOESY 接触（长链贯穿笼腔）；疏水/氟憎效应强于 PFBA（TΔS 更大），静电贡献相对减弱（吸热 ΔH = +8.0 kJ/mol，可反映四 PFBA 团簇 vs 两 PFOA 的静电差异被 PFOA 更大疏水贡献抵消）；破过容量超出 1:2 理论归因于外部+内部结合的沉淀聚集；F···F 平均距离 2.79 Å（Figure 3f 读数，needs_review）",
+      "water_quality_tested": "Milli-Q 水（1000 ng/L 单一 PFAS 流穿）；model tap water（南澳典型盐浓度，Table S15 未获取）；环境相关浓度 ∼150 ng/L（出口 <1 ng/L）",
+      "_source": {
+        "材料与表征": "p.6 [text/visual] 正文；p.6–7 [text] 正文 + Figure 5c",
+        "removal/capacity/kinetics/regeneration": "p.7 [text] 正文（Figure 6a, 6b, 6c–d；容量 ∼20 mg/g 与 0.6 mM 破过；p7 视觉转录失败，取文本层）",
+        "log_K/ΔH/ΔS": "p.4 [text] 正文（>10⁸ M⁻²、1:2 模型下限 4.2、Figure 4a）；p.5 [text] 正文 + Figure 4c,d（ITC log K 5.3、ΔH = +8.0 kJ/mol；TΔS 柱值图估读 p.6 [visual] Figure 4d）",
+        "stoichiometry/结构": "p.3 [text] 正文（Figure 2e, 2g：2 当量消耗游离主体、HOESY）；p.4 [text] 正文 + Figure 3f（X 射线 1·(PFOA)₂ 垂直排列；F···F 距离为 p.5 [visual] Figure 3f 读数）；p.10 [text] CCDC 2497660"
+      },
+      "_quality": {
+        "confidence": "high（除标注图估读项外均为文本层正文原句数值）",
+        "needs_review": true,
+        "needs_review_items": [
+          "TΔS ≈ 38 kJ/mol（Figure 4d 柱状图估读，视觉转录 page_006.md）",
+          "F···F = 2.79 Å（Figure 3f 图旁标注读数，视觉转录）"
+        ],
+        "null_fields": [
+          "chemical_formula（主文未给出 MOC 1 分子式）",
+          "target_pollutant.molecular_formula / molecular_weight_g_mol：主文未报告（SI 未获取）"
+        ],
+        "conflict_notes": "视觉转录 page_004.md 称 '1:2 模型 log K 下限 5.2' 与 'log K ≈ 5.1 for PFOA'，文本层 p4 明确为 'The 1:2 model fit for PFOA yielded a lower log K of 4.2'，已按文本层取 4.2；视觉转录另将慢交换估算误写为 'PFOS >10⁵ M⁻¹'，文本层为 'PFOA >10⁸ M⁻²'，已按文本层",
+        "chemical_formula": "unavailable",
+        "cage_loading_wt_percent": "reliable",
+        "specific_surface_area_m2_g": "reliable",
+        "total_pore_volume_cm3_g": "reliable",
+        "pore_diameter_A": "reliable",
+        "host_guest_stoichiometry": "reliable"
+      }
+    }
+  ],
+  "cross_record_notes": {
+    "shared_material_values": "所有 7 条记录共享同一吸附剂 1·MS：cage loading 0.99 ± 0.01 wt%（ICP-MS，约 37% 初始 MOC 1 溶液被吸附，回收液可复用）；S_BET = 403 m² g⁻¹（对比 MS 60A 430 m² g⁻¹；MOC 1 单独为非多孔）；总孔体积 0.79 cm³ g⁻¹（对比 0.82 cm³ g⁻¹）；保留介孔硅 type IV 吸附曲线与 H1 迟滞环；60 Å 为 MS 60A 基体标称孔径，1·MS 自身孔径未单独报告；MOC 1 笼直径 ~28 Å",
+    "log_K_summary_per_main_text": "短链 PFBA/PFPeA/PFBS/PFHxA/PFHpA 的 NMR/MCMC log K 下限自 ∼4.6 递减至 3.8（随全氟链长增加，与氟烷链对溶剂暴露增加一致）；PFOA 1:2 模型下限 4.2；PFHxS 较 PFHpA 强至少两个数量级（两参数 1:2/1:3 模型）；ITC 归一化 log K：PFBA 5.7、PFOA 5.3；摘要总述 log K ≥ 5（水中熵驱动）；Hill 函数拟合定量差（Ka ≈ 10³ M⁻¹，所有客体，模型不能容纳计量比）",
+    "figure_readout_consistency_check": "Figure 4d 估读值与 ITC 正文数值交叉验证：PFBA ΔG = ΔH − TΔS ≈ −7.4 − 25 = −32.4 kJ/mol（图估读 −32）与 log K = 5.7 → ΔG = −RT·lnK ≈ −32.5 kJ/mol 一致；PFOA 8.0 − 38 = −30（图估读 −30）与 log K = 5.3 → ΔG ≈ −30.2 kJ/mol 一致（估算仅用于一致性核对，未作为提取值写入字段）",
+    "not_extracted": "Figure 3g EDA 柱状图数值（E_INT/E_ELEC/E_DISP/E_PAULI/E_ORB，视觉转录估读且分量加和不自洽）不属于本提参字段清单，未写入 data[]；Figure 2 NMR 化学位移细节仅择要纳入机理字段"
+  },
+  "extraction_notes": [],
+  "validation_report": {
+    "schema_detected": "standard",
+    "validation_date": "2026-09-29",
+    "level_1_metadata": "PASS",
+    "level_1_details": [],
+    "level_2_entities_checked": 14,
+    "level_2_entities_removed": 0,
+    "level_2_entities_suspicious": 0,
+    "level_3_values_reliable": 34,
+    "level_3_values_needs_review": 0,
+    "level_3_values_suspicious": 0,
+    "level_3_values_unavailable": 7,
+    "level_3_exempt_literature_comparison": 0,
+    "overall_hallucination_risk": false,
+    "validation_notes": []
+  }
+}

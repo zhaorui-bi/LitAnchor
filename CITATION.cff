@@ -1,0 +1,25 @@
+# 此文件遵循 Citation File Format (CFF) 规范，可用 cffconvert 校验。
+# 如需补充 DOI，可增加 identifiers 条目（type: doi）。
+cff-version: 1.2.0
+message: >-
+  If you use LitAnchor (the ZCode edition of LitExtract) in your work,
+  please cite it using the metadata from this file.
+title: 'LitAnchor: Literature Data Extraction for ZCode (lit-extract skill)'
+authors:
+  - alias: Axl1Huang
+type: software
+version: 1.0.0
+date-released: '2026-09-29'
+license: MIT
+repository-code: 'https://github.com/zhaorui-bi/LitAnchor'
+abstract: >-
+  ZCode-native edition of the LitExtract pipeline for structured
+  literature data extraction from PDF papers: text anchoring, selective
+  visual reading of data pages, in-session constrained extraction, and
+  three-level hard validation, with zero metered API cost.
+keywords:
+  - literature-data-extraction
+  - PDF
+  - PyMuPDF
+  - ZCode-skill
+  - adsorption

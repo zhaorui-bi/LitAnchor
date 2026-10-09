@@ -1,0 +1,15 @@
+# Python 运行产物
+__pycache__/
+*.py[cod]
+
+# 自测运行产物（合成 PDF / stage0 JSON / 渲染 PNG / 验证输出）
+tests/_artifacts/
+
+# 自测真实论文回归输入（版权 PDF，可选放入，勿提交）
+tests/andersson_main.pdf
+
+# macOS
+.DS_Store
+
+# 本地插件运行状态
+.mimosa/

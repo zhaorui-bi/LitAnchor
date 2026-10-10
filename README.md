@@ -1,5 +1,7 @@
 # LitAnchor
 
+**English** | [简体中文](README.zh-CN.md)
+
 > **Structured, page-traceable data extraction from PDF papers** — text anchoring, selective visual reading, and three-level hard validation, at zero metered API cost.
 
 [![CI](https://github.com/zhaorui-bi/LitAnchor/actions/workflows/ci.yml/badge.svg)](https://github.com/zhaorui-bi/LitAnchor/actions/workflows/ci.yml)
@@ -259,7 +261,8 @@ Native PDFs with a text layer (as downloaded from the publisher) work best, in C
 LitAnchor/
 ├── SKILL.md                              # The protocol document (installed to ~/.zcode/skills/lit-extract/)
 ├── install.sh                            # One-command install / update / uninstall
-├── README.md                             # This file
+├── README.md                             # This file (English)
+├── README.zh-CN.md                       # Simplified-Chinese README
 ├── LICENSE                               # MIT
 ├── CONTRIBUTING.md                       # Contribution guidelines
 ├── CHANGELOG.md                          # Changelog
